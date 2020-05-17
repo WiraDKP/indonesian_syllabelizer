@@ -67,6 +67,6 @@ class Syllabelizer:
                 pass
             else:
                 result += [s]
-        if suku_kata[-1] not in self.VOKAL:
+        if (suku_kata[-1] not in self.VOKAL) | (not skip_v):
             result += [suku_kata[-1]]
         return result
