@@ -1,4 +1,6 @@
 # Syllabelizer for Indonesian Language in Python
+This is a rule-based syllabelizer for Indonesian Language. Please note that this project does not aim to replicate rules in Ejaan yang Disempurnakan (EYD), but focuses on a simple way to split indonesian words into common sub-words because it is good enough for my purposes.
+
 ## Installation
 ```
 pip install silabel
