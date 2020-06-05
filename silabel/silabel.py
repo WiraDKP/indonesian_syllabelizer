@@ -4,7 +4,7 @@ import numpy as np
 
 class Syllabelizer:
     def __init__(self):
-        self.DFT_K = ["kh", "ng", "ny", "sy", "dh", "ch", "ph", "th", 
+        self.DFT_K = ["kh", "ng", "ny", "sy", "dh", "ch", "ph", "th", "gr",
                       "tr", "fr", "pr", "kl", "bl", "pl", "kr", "sw", "dw"]
         self.DFT_K = {a: b for a, b in zip(self.DFT_K, list("¡£¢∞•≠œ®†¥øπ«åß©∆"))}
 
