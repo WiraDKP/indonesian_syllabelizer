@@ -1,72 +1,85 @@
-import re
 import numpy as np
+from silabel._fonologi import BaseFonologi
 
 
-class Syllabelizer:
+class Syllabelizer(BaseFonologi):
     def __init__(self):
-        self.DFT_K = ["kh", "ng", "ny", "sy", "dh", "ch", "ph", "th", "gr",
-                      "tr", "fr", "pr", "kl", "bl", "pl", "kr", "sw", "dw"]
-        self.DFT_K = {a: b for a, b in zip(self.DFT_K, list("¡£¢∞•≠œ®†¥øπ«åß©∆"))}
+        super().__init__()
 
-        self.DFT_V = ["ai", "au", "ei", "oi"]
-        self.VOKAL = ["a", "e", "i", "o", "u"]
-
-    def syllabelize(self, query, revert=True):
-        query = self._merge_diftong(query)
-        suku_kata = self._split_query(query)
-        suku_kata = self._fix_vdift(suku_kata)
+    def syllabelize(self, text, revert=True):
+        text = text.lower()
+        
+        if self._is_all_konsonan(text):
+            silabel = list(text)
+        else:
+            text = self._merge_diftong(text)            
+            silabel = self._initialize_split(text)
+            silabel = self._fix_silabel(silabel)
 
         if revert:
-            suku_kata = [self._revert_diftong(s) for s in suku_kata]
-        return suku_kata        
+            silabel = [self._revert_diftong(s) for s in silabel]
+        return silabel
+    
+    def _initialize_split(self, query):
+        # Konversi ke fonologi        
+        f = self._to_fonologi(query)
+
+        # Pisah konsonan dan vokal
+        f = f.replace("kk", "k|k")
+        f = f.replace("vv", "v|v")
         
-    def _merge_diftong(self, text):
-        for k, v in self.DFT_K.items():
-            text = text.replace(k, v)
-        return text
-
-    def _revert_diftong(self, text):
-        for k, v in self.DFT_K.items():
-            text = text.replace(v, k)
-        return text
-
-    def _split_query(self, query):
-        symbol = "".join(["v" if char in self.VOKAL else "k" for char in query])
-
-        symbol = symbol.replace("kk", "k|k")
-        symbol = symbol.replace("vv", "v|v")
-        symbol = symbol.replace("|vkv", "v|kv")
-        symbol = symbol.replace("kvv|", "kv|v|")
-        symbol = symbol.replace("kvk|", "|kvk|")
-        symbol = re.sub("kvk$", "|kvk", symbol)
-        symbol = re.sub("^vkv", "v|kv", symbol)    
-        symbol = re.sub("\|+", "|", symbol)
-        symbols = []
-        for s in symbol.split("|"):
-            if s != "":
-                if len(s) > 3:
-                    symbols += s.replace("vk", "v|k").split("|")
+        # Pisah suku diawali vokal
+        f = f.replace("|vk|", "|v|k|")
+        
+        # Pisah 2 suku diawali vokal
+        f = f.replace("vkv", "v|kv")
+        
+        # Pisah 2 suku ganjil konsonan
+        f = f.replace("|kvkvk|", "|kv|kvk|")
+        
+        # Pisah yang berbeda fonologi
+        f_list = []
+        for item in f.split("|"):
+            if item != "":
+                if len(item) > 3:
+                    f_list += item.replace("vk", "v|k").split("|")
                 else:
-                    symbols += [s]
+                    f_list += [item]
 
-        idx = np.cumsum([0] + [len(s) for s in symbols])
-        suku_kata = [query[a:b] for a, b in zip(idx[:-1], idx[1:])]
-        return suku_kata
+        # Kembalikan ke string
+        idx = np.cumsum([0] + [len(f) for f in f_list])
+        silabel = [query[a:b] for a, b in zip(idx[:-1], idx[1:])]
+        return silabel
 
-    def _fix_vdift(self, suku_kata):
+    def _fix_silabel(self, silabel):
+        skip = False
         result = []
-        skip_v = False
-        for i, s in enumerate(suku_kata[:-1]):
-            if suku_kata[i+1] in self.VOKAL:
-                if (s[-1] + suku_kata[i+1]) in self.DFT_V:
-                    result += [s + suku_kata[i+1]]
-                    skip_v = True
+        for s_a, s_b in zip(silabel[:-1], silabel[1:]):
+            if not skip:
+                # Fix single vokal
+                if (s_b in self.vokal):
+                    if (s_a[-1] + s_b) in self.diftong_vokal:
+                        result.append(s_a + s_b)
+                        skip = True
+                    else:
+                        result.append(s_a)
+                # Fix single konsonan
+                elif (s_a in self.konsonan_kuat) and (s_b[0] in self.konsonan_lemah):
+                        result.append(s_a + s_b)
+                        skip = True
+                # Fix konsonan khusus
+                elif (s_a in self.diftong_khusus) and (s_b[0] in self.konsonan_lemah):
+                        result.append(s_a + s_b)
+                        skip = True      
                 else:
-                    result += [s]                
-            elif s in self.VOKAL and skip_v:
-                pass
+                    result.append(s_a)
             else:
-                result += [s]
-        if (suku_kata[-1] not in self.VOKAL) | (not skip_v):
-            result += [suku_kata[-1]]
+                skip = False
+                
+        # Handle silabel terakhir
+        if not skip:
+            if s_b in (self.konsonan + self.diftong_konsonan):
+                result[-1] += s_b
+            else:
+                result.append(s_b)
         return result
