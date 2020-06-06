@@ -1,4 +1,4 @@
 from .silabel import Syllabelizer
 
 name = 'silabel'
-__version__ = "0.3"
+__version__ = "0.4"
