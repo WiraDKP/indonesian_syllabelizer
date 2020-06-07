@@ -6,7 +6,7 @@ class Syllabelizer(BaseFonologi):
     def __init__(self):
         super().__init__()
 
-    def syllabelize(self, text, revert=True):
+    def syllabelize(self, text, fix_syllable=True, revert=True):
         text = text.lower()
         
         if self._is_all_konsonan(text):
@@ -14,7 +14,8 @@ class Syllabelizer(BaseFonologi):
         else:
             text = self._merge_diftong(text)            
             silabel = self._initialize_split(text)
-            silabel = self._fix_silabel(silabel)
+            if fix_syllable:
+                silabel = self._fix_silabel(silabel)
 
         if revert:
             silabel = [self._revert_diftong(s) for s in silabel]
