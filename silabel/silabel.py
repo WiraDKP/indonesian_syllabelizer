@@ -64,6 +64,10 @@ class Syllabelizer(BaseFonologi):
                         skip = True
                     else:
                         result.append(s_a)
+                # Fix single vokal dan konsonan                        
+                elif (s_a in self.vokal) and (s_b in self.konsonan):
+                    result.append(s_a + s_b)
+                    skip = True                        
                 # Fix single konsonan
                 elif (s_a in self.konsonan_kuat) and (s_b[0] in self.konsonan_lemah):
                         result.append(s_a + s_b)
